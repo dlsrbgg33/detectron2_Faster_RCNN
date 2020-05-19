@@ -55,16 +55,16 @@ class StandardRPNHead(nn.Module):
         # NOTE: it assumes that creating an anchor generator does not have unwanted side effect.
         anchor_generator = build_anchor_generator(cfg, input_shape)
         num_cell_anchors = anchor_generator.num_cell_anchors
-        box_dim = anchor_generator.box_dim
+        box_dim = anchor_generator.box_dim ### Dimension of each anchor box
         assert (
             len(set(num_cell_anchors)) == 1
         ), "Each level must have the same number of cell anchors"
         num_cell_anchors = num_cell_anchors[0]
 
-        # 3x3 conv for the hidden representation
+        # 3x3 conv for the hidden representation -- intermediate layer
         self.conv = nn.Conv2d(in_channels, in_channels, kernel_size=3, stride=1, padding=1)
         # 1x1 conv for predicting objectness logits
-        self.objectness_logits = nn.Conv2d(in_channels, num_cell_anchors, kernel_size=1, stride=1)
+        self.objectness_logits = nn.Conv2d(in_channels, num_cell_anchors, kernel_size=1, stride=1) ### only binary class label
         # 1x1 conv for predicting box2box transform deltas
         self.anchor_deltas = nn.Conv2d(
             in_channels, num_cell_anchors * box_dim, kernel_size=1, stride=1
@@ -98,10 +98,14 @@ class RPN(nn.Module):
         super().__init__()
 
         # fmt: off
+        #### Width and Height shoudl be bigger than this value
         self.min_box_side_len     = cfg.MODEL.PROPOSAL_GENERATOR.MIN_SIZE
+        #### ["p2", "p3", "p4", "p5", "p6"]
         self.in_features          = cfg.MODEL.RPN.IN_FEATURES
+
         self.nms_thresh           = cfg.MODEL.RPN.NMS_THRESH
         self.batch_size_per_image = cfg.MODEL.RPN.BATCH_SIZE_PER_IMAGE
+        #### What percentage the positive sample occupies
         self.positive_fraction    = cfg.MODEL.RPN.POSITIVE_FRACTION
         self.smooth_l1_beta       = cfg.MODEL.RPN.SMOOTH_L1_BETA
         self.loss_weight          = cfg.MODEL.RPN.LOSS_WEIGHT
@@ -219,6 +223,7 @@ class RPN(nn.Module):
         """
         features = [features[f] for f in self.in_features]
         pred_objectness_logits, pred_anchor_deltas = self.rpn_head(features)
+        #### Starting again from here 
         anchors = self.anchor_generator(features)
 
         if self.training:

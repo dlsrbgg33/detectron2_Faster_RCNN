@@ -232,7 +232,8 @@ class ViperCityscapesSemSegEvaluator(CityscapesEvaluator):
         cityscapes_eval.args.JSONOutput = False
         cityscapes_eval.args.colorized = False
 
-        cityscapes_eval.args.span_window = 2
+        cityscapes_eval.args.span_window = 5
+
 
         # These lines are adopted from
         # https://github.com/mcordts/cityscapesScripts/blob/master/cityscapesscripts/evaluation/evalPixelLevelSemanticLabeling.py # noqa
@@ -263,19 +264,64 @@ class ViperCityscapesSemSegEvaluator(CityscapesEvaluator):
         )
         
 
+        ##########  Prediction Img List: 0 / 5 / 10 / 15 ...
         predictionImgList = []
         for gt in groundTruthImgList:
             predictionImgList.append(cityscapes_eval.getPrediction(cityscapes_eval.args, gt))
 
-        results = cityscapes_eval.evaluateImgLists(
+        ################################################
+
+        # results = cityscapes_eval.evaluateImgLists(
+        #     predictionImgList, groundTruthImgList, cityscapes_eval.args
+        # )
+
+        # import pdb
+        # pdb.set_trace()
+        results = cityscapes_eval.evaluateImgLists_video(
             predictionImgList, groundTruthImgList, cityscapes_eval.args
         )
+        # video_results_10 = cityscapes_eval.evaluateImgLists_video_10(
+        #     predictionImgList, groundTruthImgList, cityscapes_eval.args
+        # )
+        # video_results_15 = cityscapes_eval.evaluateImgLists_video_15(
+        #     predictionImgList, groundTruthImgList, cityscapes_eval.args
+        # )
+
+
         ret = OrderedDict()
+        # ret_video = OrderedDict()
+        # ret_img_vid = OrderedDict()
+        # import pdbdsf
         ret["sem_seg"] = {
             "IoU": 100.0 * results["averageScoreClasses"],
-            # "iIoU": 100.0 * results["averageScoreInstClasses"],
             "IoU_sup": 100.0 * results["averageScoreCategories"],
-            # "iIoU_sup": 100.0 * results["averageScoreInstCategories"],
+            "VIoU_5": 100.0 * results["averageScoreClasses_vid5"],
+            "VIoU_sup_5": 100.0 * results["averageScoreCategories_vid5"],
+            "VIoU_10": 100.0 * results["averageScoreClasses_vid10"],
+            "VIoU_sup_10": 100.0 * results["averageScoreCategories_vid10"],
+            "VIoU_15": 100.0 * results["averageScoreClasses_vid15"],
+            "VIoU_sup_15": 100.0 * results["averageScoreCategories_vid15"],
         }
+      
+        ret["sem_seg_Vid"] = {
+            "VIoU_total": (ret["sem_seg"]["VIoU_5"] + \
+                          ret["sem_seg"]["VIoU_10"] + \
+                          ret["sem_seg"]["VIoU_15"]) / 3,
+
+            "VIoU_sup_total": (ret["sem_seg"]["VIoU_sup_5"] + \
+                          ret["sem_seg"]["VIoU_sup_10"] + \
+                          ret["sem_seg"]["VIoU_sup_15"]) / 3,
+        }
+
+
+        ret["sem_seg_ImgVid"] = {
+            "ImgVid_IoU_Total": (ret["sem_seg_Vid"]["VIoU_total"] * 3 + \
+                           ret["sem_seg"]["IoU"]) / 4,
+            "ImgVid_sup_IoU_Total": (ret["sem_seg_Vid"]["VIoU_sup_total"] * 3 + \
+                           ret["sem_seg"]["IoU_sup"]) / 4,
+        }
+
+        # ret.update(ret_img_vid)
+
         self._working_dir.cleanup()
         return ret
