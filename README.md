@@ -1,1 +1,1 @@
-# Detectron2_YOLO
+# Detectron2_Faster_RCNN
