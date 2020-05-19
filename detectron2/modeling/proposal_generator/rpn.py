@@ -223,7 +223,8 @@ class RPN(nn.Module):
         """
         features = [features[f] for f in self.in_features]
         pred_objectness_logits, pred_anchor_deltas = self.rpn_head(features)
-        #### Starting again from here 
+        #### Starting again from here ####
+        ## Important area for generating anchor box ##
         anchors = self.anchor_generator(features)
 
         if self.training:
