@@ -52,6 +52,8 @@ class Matcher(object):
         assert all(l in [-1, 0, 1] for l in labels)
         assert len(labels) == len(thresholds) - 1
         self.thresholds = thresholds
+        # import pdb
+        # pdb.set_trace()
         self.labels = labels
         self.allow_low_quality_matches = allow_low_quality_matches
 
@@ -90,6 +92,10 @@ class Matcher(object):
 
         match_labels = matches.new_full(matches.size(), 1, dtype=torch.int8)
 
+        ### self.labels          = [  0,   -1,   1]
+        ### self.thresholds[:-1] = [-inf, 0.3, 0.7]
+        ### self.thresholds[1:]  = [ 0.3, 0.7, inf]
+        ### Question: Why ambiguous has -1 as labels.
         for (l, low, high) in zip(self.labels, self.thresholds[:-1], self.thresholds[1:]):
             low_high = (matched_vals >= low) & (matched_vals < high)
             match_labels[low_high] = l
@@ -110,6 +116,9 @@ class Matcher(object):
         :paper:`Faster R-CNN`.
         """
         # For each gt, find the prediction with which it has highest quality
+        import pdb
+        pdb.set_trace()
+        #### Even though it is low quality, we map it to the ground truth idxs for low quality matches
         highest_quality_foreach_gt, _ = match_quality_matrix.max(dim=1)
         # Find the highest quality match available, even if it is low, including ties.
         # Note that the matches qualities must be positive due to the use of
