@@ -42,6 +42,7 @@ class BufferList(nn.Module):
 
 def _create_grid_offsets(size: List[int], stride: int, offset: float, device: torch.device):
     grid_height, grid_width = size
+    ## arange : starts = offset * stride / end = grid_width * stride / step = stride
     shifts_x = torch.arange(
         offset * stride, grid_width * stride, step=stride, dtype=torch.float32, device=device
     )
@@ -67,6 +68,7 @@ def _broadcast_params(params, num_features, name):
     Returns:
         list[list[float]]: param for each feature
     """
+
     assert isinstance(
         params, (list, tuple)
     ), f"{name} in anchor generator has to be a list! Got {params}."
@@ -102,7 +104,7 @@ class DefaultAnchorGenerator(nn.Module):
         Args:
             sizes (list[list[float]] or list[float]):
                 If sizes is list[list[float]], sizes[i] is the list of anchor sizes
-                (i.e. sqrt of anchor area) to use for the i-th feature map.
+                (i.e. sqrt of anchor area) to use for the i-th feature map. --> It is different according to the feature map
                 If sizes is list[float], the sizes are used for all feature maps.
                 Anchor sizes are given in absolute lengths in units of
                 the input image; they do not dynamically scale if the input image size changes.
@@ -117,8 +119,10 @@ class DefaultAnchorGenerator(nn.Module):
 
         self.strides = strides
         self.num_features = len(self.strides)
+        #### anchor size and anchor aspect ratio adapting to each feature map
         sizes = _broadcast_params(sizes, self.num_features, "sizes")
         aspect_ratios = _broadcast_params(aspect_ratios, self.num_features, "aspect_ratios")
+        #### Centering all of anchors with sizes and ratios into (0,0)
         self.cell_anchors = self._calculate_anchors(sizes, aspect_ratios)
 
         self.offset = offset
@@ -189,6 +193,7 @@ class DefaultAnchorGenerator(nn.Module):
         # quantization that results in slightly different sizes for different aspect ratios.
         # See also https://github.com/facebookresearch/Detectron/issues/227
 
+
         anchors = []
         for size in sizes:
             area = size ** 2.0
@@ -215,7 +220,9 @@ class DefaultAnchorGenerator(nn.Module):
                 The number of anchors of each feature map is Hi x Wi x num_cell_anchors,
                 where Hi, Wi are resolution of the feature map divided by anchor stride.
         """
+
         grid_sizes = [feature_map.shape[-2:] for feature_map in features]
+        ### Generate shifted anchor box in each feature map.
         anchors_over_all_feature_maps = self._grid_anchors(grid_sizes)
         return [Boxes(x) for x in anchors_over_all_feature_maps]
 
