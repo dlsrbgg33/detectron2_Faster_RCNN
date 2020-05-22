@@ -95,7 +95,7 @@ class Matcher(object):
         ### self.labels          = [  0,   -1,   1]
         ### self.thresholds[:-1] = [-inf, 0.3, 0.7]
         ### self.thresholds[1:]  = [ 0.3, 0.7, inf]
-        ### Question: Why ambiguous has -1 as labels.
+        ### Question: Why ambiguous has -1 as labels. --> later -1 is ignored
         for (l, low, high) in zip(self.labels, self.thresholds[:-1], self.thresholds[1:]):
             low_high = (matched_vals >= low) & (matched_vals < high)
             match_labels[low_high] = l
