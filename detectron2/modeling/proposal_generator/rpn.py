@@ -100,7 +100,7 @@ class RPN(nn.Module):
         # fmt: off
         #### Width and Height shoudl be bigger than this value
         self.min_box_side_len     = cfg.MODEL.PROPOSAL_GENERATOR.MIN_SIZE
-        #### ["p2", "p3", "p4", "p5", "p6"]
+        #### ["p2", "p3", "p4", "p5", "p6 (Maxpool from p5)"]
         self.in_features          = cfg.MODEL.RPN.IN_FEATURES
 
         self.nms_thresh           = cfg.MODEL.RPN.NMS_THRESH
@@ -180,6 +180,7 @@ class RPN(nn.Module):
             gt_boxes_i: ground-truth boxes for i-th image
             """
 
+            ### Num of gt boxes x Num of anchors --> Overlapping value for each anchor with gt boxes.
             match_quality_matrix = retry_if_cuda_oom(pairwise_iou)(gt_boxes_i, anchors)
             matched_idxs, gt_labels_i = retry_if_cuda_oom(self.anchor_matcher)(match_quality_matrix)
             # Matching is memory-expensive and may result in CPU tensors. But the result is small
@@ -224,14 +225,15 @@ class RPN(nn.Module):
         features = [features[f] for f in self.in_features]
         pred_objectness_logits, pred_anchor_deltas = self.rpn_head(features)
         #### Starting again from here ####
-        ## Important area for generating anchor box ###
+        ## Important area for generating anchor box ###his
         anchors = self.anchor_generator(features)
-
+        ### Finish analyzing in 5/20
         if self.training:
             gt_labels, gt_boxes = self.label_and_sample_anchors(anchors, gt_instances)
         else:
             gt_labels, gt_boxes = None, None
 
+        ### Above, we find gt-like anchors and use them for training.
         outputs = RPNOutputs(
             self.box2box_transform,
             self.batch_size_per_image,
